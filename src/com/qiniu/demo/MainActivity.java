@@ -15,7 +15,7 @@ import android.widget.Toast;
 import com.qiniu.R;
 import com.qiniu.cl.auth.Authorizer;
 import com.qiniu.cl.auth.BasicAuthorizer;
-import com.qiniu.cl.face.Upload;
+import com.qiniu.cl.face.UpApi;
 import com.qiniu.cl.face.UriParam;
 import com.qiniu.cl.up.SliceUpload;
 import com.qiniu.cl.up.StreamSliceUpload;
@@ -69,7 +69,7 @@ public class MainActivity extends Activity {
 
 	long start = 0;
 	
-	private Handler uploadHandler = new Upload.UploadHandler(){
+	private Handler uploadHandler = new UpApi.UploadHandler(){
 		@Override
 		protected void handler(){
 			long now = System.currentTimeMillis();
@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
 		upload.passParam = p;
 		
 		start = System.currentTimeMillis();
-		new Upload(upload, uploadHandler).execute();
+		new UpApi(upload, uploadHandler).execute();
 	}
 	
 }

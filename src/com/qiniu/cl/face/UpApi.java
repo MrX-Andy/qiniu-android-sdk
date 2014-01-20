@@ -11,17 +11,17 @@ import com.qiniu.cl.rs.ChunkCallRet;
 import com.qiniu.cl.up.SliceUpload;
 import com.qiniu.cl.util.Util;
 
-public class Upload implements Runnable {
+public class UpApi implements Runnable {
 	private SliceUpload upload;
 	private Handler handler;
 
-	public Upload(SliceUpload upload, Handler handler) {
+	public UpApi(SliceUpload upload, Handler handler) {
 		this.upload = upload;
 		this.handler = handler;
 	}
 	
 	public static void execute(SliceUpload upload, Handler handler){
-		new Upload(upload, handler).execute();
+		new UpApi(upload, handler).execute();
 	}
 
 	public void execute() {
