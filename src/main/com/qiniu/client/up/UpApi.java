@@ -154,13 +154,13 @@ public class UpApi implements Runnable {
 	}
 	
 	private void clearThreadPool(){
-		if(outerThreadPoolManager){
+		if(!outerThreadPoolManager){
 			threadPool.shutdown();
 		}
 	}
 	
 	private void clearHttpClient(){
-		if(outerHttpClientManager){
+		if(!outerHttpClientManager){
 			httpClient.getConnectionManager().shutdown();
 		}
 	}
