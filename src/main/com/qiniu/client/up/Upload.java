@@ -7,9 +7,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.http.client.HttpClient;
 
 import com.qiniu.client.auth.Authorizer;
+import com.qiniu.client.config.Config;
 import com.qiniu.client.rs.UploadResultCallRet;
 import com.qiniu.client.up.slice.resume.Resumable;
-import com.qiniu.client.config.Config;
 
 /**
  * 资源上传基类
@@ -18,6 +18,7 @@ import com.qiniu.client.config.Config;
  */
 public abstract class Upload {
 	public abstract UploadResultCallRet execute();
+	
 	public String host = Config.UP_HOST;
 	protected HttpClient httpClient;
 	
@@ -31,7 +32,7 @@ public abstract class Upload {
     // 只对分块上传有效
     protected ThreadPoolExecutor threadPool;
     // 只对分块上传有效
-    protected Class<? extends Resumable> resume;
+    protected Class<? extends Resumable> resumeClass;
     
 	protected long contentLength = 0;
     private Lock successLengthLock = new ReentrantLock();
@@ -92,13 +93,15 @@ public abstract class Upload {
     }
 
 	public void setResumable(Class<? extends Resumable> resume) {
-		if(this.resume == null){
-			this.resume = resume;
+		if(this.resumeClass == null){
+			this.resumeClass = resume;
 		}
 	}
 	
 	public Class<? extends Resumable> getResumable() {
-		return resume;
+		return resumeClass;
 	}
+	
+	public abstract Resumable getResume();
     
 }

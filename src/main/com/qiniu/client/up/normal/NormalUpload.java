@@ -11,11 +11,12 @@ import org.apache.http.entity.mime.content.AbstractContentBody;
 import org.apache.http.entity.mime.content.StringBody;
 
 import com.qiniu.client.auth.Authorizer;
+import com.qiniu.client.config.Config;
 import com.qiniu.client.ex.CallRetException;
 import com.qiniu.client.rs.UploadResultCallRet;
 import com.qiniu.client.up.Upload;
+import com.qiniu.client.up.slice.resume.Resumable;
 import com.qiniu.client.util.Util;
-import com.qiniu.client.config.Config;
 
 /**
  * 资源作为一个整体，直接上传到服务器
@@ -64,6 +65,10 @@ public abstract class NormalUpload extends Upload {
 		if(key != null){
 			requestEntity.addPart("key", new StringBody(key,Charset.forName("utf-8")));
 		}
+	}
+	
+	public Resumable getResume(){
+		return null;
 	}
 
 }

@@ -7,7 +7,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.http.client.HttpClient;
 
 import com.qiniu.client.rs.UploadResultCallRet;
-import com.qiniu.client.up.slice.resume.NonResume;
 import com.qiniu.client.up.slice.resume.Resumable;
 import com.qiniu.client.util.HttpHelper;
 import com.qiniu.client.util.Util;
@@ -125,7 +124,6 @@ public class UpApi implements Runnable {
 		public UploadResultCallRet call() throws Exception {
 			initThreadPool();
 			initHttpClient();
-			initResume();
 			upload.setHttpClient(httpClient);
 			upload.setThreadPool(threadPool);
 			upload.setResumable(resume);
@@ -141,12 +139,6 @@ public class UpApi implements Runnable {
 		}
 	}
 	
-	private void initResume() {
-		if(this.resume == null){
-			resume = NonResume.class;
-		}
-	}
-
 	private void initHttpClient() {
 		if(httpClient == null){
 			httpClient = HttpHelper.getHttpClient();

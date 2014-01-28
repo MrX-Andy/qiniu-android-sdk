@@ -9,7 +9,7 @@ public class Block {
 	private String key;
 	
 	public Block(int idx, String ctx){
-		this(idx, ctx, new Date().getTime());
+		this(idx, ctx, 0);
 	}
 	
 	public Block(int idx, String ctx, long time){

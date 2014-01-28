@@ -1,17 +1,19 @@
 package com.qiniu.client.up.slice.resume;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public abstract class BaseResume implements Resumable {
 
-	private int blockCount;
-	private List<Block> blocks;
+	protected int blockCount;
+	private Block[] blocks;
 	
 	public BaseResume(int blockCount){
 		this.blockCount = blockCount;
-		blocks = new LinkedList<Block>();
+		initBlocks();
 		this.load();
+	}
+	
+	private void initBlocks(){
+		blocks = new Block[blockCount];
+
 	}
 	
 	@Override
@@ -21,17 +23,22 @@ public abstract class BaseResume implements Resumable {
 	
 	@Override
 	public boolean isDone() {
-		return this.blockCount == blocks.size();
+		return this.blockCount == blocks.length;
 	}
 
 	@Override
 	public boolean isBlockDone(int idx) {
-		return blocks.get(idx) != null;
+		return blocks[idx] != null;
+	}
+	
+	@Override
+	public Block getBlock(int idx) {
+		return blocks[idx];
 	}
 
 	@Override
 	public String getCtx(int idx) {
-		Block block = blocks.get(idx);
+		Block block = blocks[idx];
 		if(block != null){
 			return block.getCtx();
 		}else{
@@ -40,23 +47,13 @@ public abstract class BaseResume implements Resumable {
 	}
 
 	@Override
-	public String getCtxes() {
-		StringBuilder sb = new StringBuilder();
-		for(Block b : blocks){
-			sb.append(",").append(b.getCtx());
-		}
-		String s = sb.substring(1);
-		return s;
+	public void set(Block block){
+		blocks[block.getIdx()] = block;
 	}
 	
 	@Override
-	public void add(Block block){
-		blocks.add(block.getIdx(), block);
-	}
-	
-	@Override
-	public void remove(Block block){
-		blocks.remove(block.getIdx());
+	public void drop(Block block){
+		blocks[block.getIdx()] = null;
 	}
 
 

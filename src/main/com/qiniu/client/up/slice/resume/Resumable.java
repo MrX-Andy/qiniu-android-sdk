@@ -28,15 +28,11 @@ public interface Resumable {
 	 */
 	String getCtx(int idx);
 	
-	/**
-	 * 获取完整的ctx内容，以“,”分隔，按其在源文件中的位置排序。
-	 * @return
-	 */
-	String getCtxes();
+	Block getBlock(int idx);
 	
-	void add(Block block);
+	void set(Block block);
 	
-	void remove(Block block);
+	void drop(Block block);
 	
 	/**
 	 * 加载已保存的上传信息
