@@ -78,10 +78,12 @@ public class SampleMainActivity extends Activity {
 			InputParam p = (InputParam)this.getPassParam();
 			long now = System.currentTimeMillis();
 			long time = (now - start)/1000;
-			long v = this.getSuccessLength()/1000/(time + 1);
+			long v = this.getCurrentUploadLength()/1000/(time + 1);
 			String m = p.path + " : " + p.name + " : "  + p.size + "  : "+ p.lastMofified;
-			String txt = m + "\n共: " + getContentLength() + "B, 已上传: " + getSuccessLength() + 
-				"B, 耗时: " + time + "秒, 速度: " + v + "KB/s";
+			String txt = m + "\n共: " + getContentLength() + "KB, 历史已上传: "
+					+ getLastUploadLength()/1024 + "KB, 本次已上传: "
+					+ getCurrentUploadLength()/1024 + 
+				"KB, 耗时: " + time + "秒, 速度: " + v + "KB/s";
 			progress.setText(txt);
 		}
 

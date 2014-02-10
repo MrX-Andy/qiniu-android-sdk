@@ -17,9 +17,9 @@ public class RandomAccessFileUploadBlock extends UploadBlock {
 	private final Lock fileUploadLock;
 
 	public RandomAccessFileUploadBlock(SliceUpload sliceUpload,
-			HttpClient httpClient, String host, long offset, int len,
-			RandomAccessFile file, Lock fileUploadLock) {
-		super(sliceUpload, httpClient, host, offset, len);
+			HttpClient httpClient, String host, int blockIdx, long offset,
+			int len, RandomAccessFile file, Lock fileUploadLock) {
+		super(sliceUpload, httpClient, host, blockIdx, offset, len);
 		this.file = file;
 		this.fileUploadLock = fileUploadLock;
 	}
@@ -29,6 +29,7 @@ public class RandomAccessFileUploadBlock extends UploadBlock {
 		AbstractHttpEntity entity = new AbstractHttpEntity() {
 			private boolean consumed = false;
 			private long length = len;
+
 			@Override
 			public boolean isRepeatable() {
 				return true;
@@ -46,29 +47,29 @@ public class RandomAccessFileUploadBlock extends UploadBlock {
 			}
 
 			@Override
-			public void  writeTo(OutputStream os) throws IOException {
+			public void writeTo(OutputStream os) throws IOException {
 				consumed = false;
-				try{
-					byte[] b = new byte[1024 * 2];
+				try {
+					byte[] b = new byte[1024 * 4];
 					int len = -1;
 					long off = offset + start;
-					
-					while(true){
-						try{
+
+					while (true) {
+						try {
 							fileUploadLock.lock();
 							file.seek(off);
 							len = file.read(b);
-							if(len == -1){
+							if (len == -1) {
 								break;
 							}
-						}finally{
+						} finally {
 							fileUploadLock.unlock();
 						}
 						os.write(b, 0, len);
 						off += len;
 					}
 					os.flush();
-				}finally{
+				} finally {
 					consumed = true;
 				}
 			}
@@ -86,15 +87,15 @@ public class RandomAccessFileUploadBlock extends UploadBlock {
 	protected long buildCrc32(int start, int len) {
 		return Util.crc32(copy2New(start, len));
 	}
-	
-	private byte[] copy2New(int start, int len){
+
+	private byte[] copy2New(int start, int len) {
 		byte[] data = new byte[len];
 		try {
-			try{
+			try {
 				fileUploadLock.lock();
 				long off = offset + start;
 				file.seek(off);
-			}finally{
+			} finally {
 				fileUploadLock.unlock();
 			}
 			file.read(data);

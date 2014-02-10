@@ -2,8 +2,8 @@ package com.qiniu.client.up.slice.resume;
 
 public class DataStoreResume extends BaseResume {
 
-	public DataStoreResume(int blockCount) {
-		super(blockCount);
+	public DataStoreResume(int blockCount, String key) throws Exception {
+		super(blockCount, key);
 	}
 
 	@Override
@@ -20,12 +20,6 @@ public class DataStoreResume extends BaseResume {
 
 	@Override
 	public void clean() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void cleanAll() {
 		// TODO Auto-generated method stub
 
 	}

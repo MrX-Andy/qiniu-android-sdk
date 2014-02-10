@@ -9,6 +9,12 @@ public interface Resumable {
 	int blockCount();
 	
 	/**
+	 * 文件标识
+	 * @return
+	 */
+	String getKey();
+	
+	/**
 	 * 整个资源是否已成功上传
 	 * @return
 	 */
@@ -20,6 +26,12 @@ public interface Resumable {
 	 * @return
 	 */
 	boolean isBlockDone(int idx);
+	
+	/**
+	 * 已完成的块数
+	 * @return
+	 */
+	int doneCount();
 	
 	/**
 	 * 获取指定块的控制信息ctx内容
@@ -37,20 +49,17 @@ public interface Resumable {
 	/**
 	 * 加载已保存的上传信息
 	 */
-	void load();
+	void load() throws Exception;
 	
 	/**
 	 * 保存上传块信息
 	 */
-	void save();
+	void save() throws Exception;
 	
 	/**
+	 * 上传成功后方可调用此方法
 	 * 清除上传信息
 	 */
-	void clean();
+	void clean() throws Exception;
 	
-	/**
-	 * 清除所有的上传信息
-	 */
-	void cleanAll();
 }

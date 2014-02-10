@@ -1,6 +1,6 @@
 qiniu-android-sdk  
-=================  
-包依赖 : httpmime-4.2, 可使用 httpmime-4.2.6.jar  
+=================   
+包依赖 : httpmime-4.2, 可使用 httpmime-4.2.6.jar     
 org.apache.http.entity.mime.  
   
 一、资源上传（包含文件、输入流）：     
@@ -17,7 +17,7 @@ Upload upload2 =
 new RandomAccessFileUpload(fp.file, authorizer, fp.size, fp.name, fp.mimeType);   
 Thread t2 = UpApi.execute(upload2, uploadHandler);    
    
-3.多文件队列上传   
+3.多文件队列上传,当大于某值时使用分片上传   
 UpApiSequence seq = new UpApiSequence();   
 seq.add(uploadHandler, files);   
 Thread t = seq.execute();   
@@ -26,13 +26,23 @@ seq.tryShutDown();
    
 4.回调处理   
 private Object passParam;   
-private long successLength;   
+private long currentUploadLength;   
 private long contentLength;   
+private long lastUploadLength;   
 protected void onProcess();   
 protected void onSuccess(UploadResultCallRet ret);   
 protected void onFailure(Exception e);   
    
-5.续传，保留已完整上传块的记录，已上传的块，不用再上传（待完成）   
-//TODO   
+5.续传,保留已完整上传块的记录,已上传的块,不用再上传（默认不保存断点记录）   
+upload.setResumable(FileResume.class);   
+upApi.setResumable(FileResume.class);   
+seq.setResumable(FileResume.class);   
+(存入数据库暂未实现 DataStoreResume.class)
+
+6.获取上传凭证,获取/生成凭证分离   
+public interface Authorizer {   
+	void buildNewUploadToken();   
+	String getUploadToken();   
+}  
    
 

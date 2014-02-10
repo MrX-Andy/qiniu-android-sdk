@@ -26,12 +26,12 @@ public class StreamSliceUpload extends SliceUpload{
 	}
 
     @Override
-    protected UploadBlock buildBlockUpload(long start, int len) throws IOException {
+    protected UploadBlock buildBlockUpload(int blockIdx, long start, int len) throws IOException {
         ByteRef br = getByteArray(buffers);
         byte[] b = new byte[len];
         is.read(b, 0, len);
         br.setBuf(b);
-        StreamUploadBlock bu = new StreamUploadBlock(this, httpClient, host, start, len, br);
+        StreamUploadBlock bu = new StreamUploadBlock(this, httpClient, host, blockIdx, start, len, br);
         return bu;
     }
 

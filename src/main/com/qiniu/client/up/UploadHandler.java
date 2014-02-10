@@ -8,10 +8,9 @@ import com.qiniu.client.rs.UploadResultCallRet;
 
 public abstract class UploadHandler extends Handler {
 	private Object passParam;
-	private long successLength;
+	private long currentUploadLength;
 	private long contentLength;
-	private long uploadLength;
-	
+	private long lastUploadLength;
 	private UploadResultCallRet ret;
 	private Exception e;
 	
@@ -71,13 +70,12 @@ public abstract class UploadHandler extends Handler {
 	public void setPassParam(Object passParam) {
 		this.passParam = passParam;
 	}
-
-	public long getSuccessLength() {
-		return successLength;
+	public long getCurrentUploadLength() {
+		return currentUploadLength;
 	}
 
-	public void setSuccessLength(long successLength) {
-		this.successLength = successLength;
+	public void setCurrentUploadLength(long currentUploadLength) {
+		this.currentUploadLength = currentUploadLength;
 	}
 
 	public long getContentLength() {
@@ -88,13 +86,12 @@ public abstract class UploadHandler extends Handler {
 		this.contentLength = contentLength;
 	}
 
-	public long getUploadLength() {
-		return uploadLength;
+	public long getLastUploadLength() {
+		return lastUploadLength;
 	}
 
-	public void setUploadLength(long uploadLength) {
-		this.uploadLength = uploadLength;
+	public void setLastUploadLength(long uploadLength) {
+		this.lastUploadLength = uploadLength;
 	}
-	
 }
 

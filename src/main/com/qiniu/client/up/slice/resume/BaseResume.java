@@ -3,17 +3,17 @@ package com.qiniu.client.up.slice.resume;
 public abstract class BaseResume implements Resumable {
 
 	protected int blockCount;
-	private Block[] blocks;
+	protected String key;
+	protected Block[] blocks;
 	
-	public BaseResume(int blockCount){
+	public BaseResume(int blockCount, String key){
 		this.blockCount = blockCount;
+		this.key = key;
 		initBlocks();
-		this.load();
 	}
 	
 	private void initBlocks(){
 		blocks = new Block[blockCount];
-
 	}
 	
 	@Override
@@ -22,13 +22,29 @@ public abstract class BaseResume implements Resumable {
 	}
 	
 	@Override
+	public String getKey() {
+		return key;
+	}
+	
+	@Override
 	public boolean isDone() {
-		return this.blockCount == blocks.length;
+		return this.blockCount == doneCount();
 	}
 
 	@Override
 	public boolean isBlockDone(int idx) {
 		return blocks[idx] != null;
+	}
+	
+	@Override
+	public int doneCount(){
+		int count = 0;
+		for(Block b : blocks){
+			if(b != null){
+				count ++;
+			}
+		}
+		return count;
 	}
 	
 	@Override

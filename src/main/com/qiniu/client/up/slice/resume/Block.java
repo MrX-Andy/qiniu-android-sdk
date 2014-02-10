@@ -1,21 +1,20 @@
 package com.qiniu.client.up.slice.resume;
 
-import java.util.Date;
 
 public class Block {
 	private int idx;
 	private String ctx;
-	private long time;
 	private String key;
-	
+	private boolean newAdd;
+
 	public Block(int idx, String ctx){
-		this(idx, ctx, 0);
+		this(idx, ctx, false);
 	}
 	
-	public Block(int idx, String ctx, long time){
+	public Block(int idx, String ctx, boolean newAdd){
 		this.idx = idx;
 		this.ctx = ctx;
-		this.time = time;
+		this.newAdd = newAdd;
 	}
 	
 	public int getIdx() {
@@ -26,11 +25,17 @@ public class Block {
 		return ctx;
 	}
 
-	public long getTime() {
-		return time;
-	}
-
 	public String getKey() {
 		return key;
 	}
+	
+	
+	public boolean isNewAdd() {
+		return newAdd;
+	}
+
+	public void setNewAdd(boolean newAdd) {
+		this.newAdd = newAdd;
+	}
+
 }

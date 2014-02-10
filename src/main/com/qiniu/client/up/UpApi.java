@@ -47,8 +47,14 @@ public class UpApi implements Runnable {
 		this.httpClient = httpClient;
 	}
 	
-	public static void execute(Upload upload, UploadHandler handler){
-		new UpApi(upload, handler).execute();
+	public static Thread execute(Upload upload, UploadHandler handler){
+		return new UpApi(upload, handler).execute();
+	}
+	
+	public static Thread execute(Upload upload, UploadHandler handler, Class<? extends Resumable> resumeClass){
+		UpApi upapi = new UpApi(upload, handler);
+		upapi.setResumable(resumeClass);
+		return upapi.execute();
 	}
 
 	public Thread execute() {
@@ -108,7 +114,8 @@ public class UpApi implements Runnable {
 
 	private void buildParams() {
 		handler.setPassParam(upload.passParam);
-		handler.setSuccessLength(upload.getSuccessLength());
+		handler.setCurrentUploadLength(upload.getCurrentUploadLength());
+		handler.setLastUploadLength(upload.getLastUploadLength());
 		handler.setContentLength(upload.getContentLength());
 	}
 
@@ -181,8 +188,8 @@ public class UpApi implements Runnable {
 		this.outerHttpClientManager = outerHttpClientManager;
 	}
 	
-	public void setResumable(Class<? extends Resumable> resume) {
-		this.resume = resume;
+	public void setResumable(Class<? extends Resumable> resumeClass) {
+		this.resume = resumeClass;
 	}
 	
 	public Class<? extends Resumable> getResumable() {

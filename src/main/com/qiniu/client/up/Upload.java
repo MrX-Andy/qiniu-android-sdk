@@ -35,8 +35,10 @@ public abstract class Upload {
     protected Class<? extends Resumable> resumeClass;
     
 	protected long contentLength = 0;
-    private Lock successLengthLock = new ReentrantLock();
-    private long successLength = 0;
+	protected long lastUploadLength = 0;
+    
+	private Lock successLengthLock = new ReentrantLock();
+    private long currentUploadLength = 0;
     
     protected boolean done = false;
     
@@ -61,7 +63,7 @@ public abstract class Upload {
     protected void addSuccessLength(long size){
         successLengthLock.lock();
         try{
-            successLength += size;
+            currentUploadLength += size;
         }finally{
             successLengthLock.unlock();
         }
@@ -80,13 +82,17 @@ public abstract class Upload {
 	}
 
     /**已成功上传的数据量*/
-    public long getSuccessLength() {
-        return successLength;
+    public long getCurrentUploadLength() {
+        return currentUploadLength;
     }
 
     public long getContentLength() {
         return contentLength;
     }
+    
+    public long getLastUploadLength() {
+		return lastUploadLength;
+	}
 
     public boolean isDone(){
         return done;

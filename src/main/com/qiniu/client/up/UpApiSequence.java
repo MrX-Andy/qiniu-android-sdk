@@ -30,14 +30,18 @@ import com.qiniu.client.util.Util;
 public class UpApiSequence implements Runnable{
     /** 同时正在上传文件的最大值 */
     public static int activeFileLimit = 3;
-    public static int threadsLimit = 6;
+    /** 最大线程数 */
+	public static int threadsLimit = 6;
+	/** 资源大于此值的将采用分片上传,小于等于的直传. */
     public static int sliceShed = 1024 * 1024 * 4;
 	private PausableThreadPoolExecutor threadPool;
 	private HttpClient httpClient;
 	private Authorizer authorizer;
+	/** 断点续传记录类类型 */
 	protected Class<? extends Resumable> resume;
-	
+	/** 等待上传队列 */
 	private LinkedList<UpApi> waiting;
+	/** 正在执行上传队列,其最大值受activeFileLimit限制 */
 	private List<UpApi> process;
 	private boolean isShutdown = false;
 	
@@ -53,7 +57,7 @@ public class UpApiSequence implements Runnable{
 	
 	/**
 	 * 开启线程执行
-	 * 调用join等必须加入如时间限制
+	 * 若调用join等必须加入如超时限制
 	 * @return
 	 */
 	public Thread execute(){
@@ -81,7 +85,7 @@ public class UpApiSequence implements Runnable{
 	}
 	
 	private void next(){
-		if(process.size() < activeFileLimit && !waiting.isEmpty()){
+		if(process.size() <= activeFileLimit && !waiting.isEmpty()){
 			UpApi api = waiting.pollFirst();
 			process.add(api);
 			api.httpClient = this.httpClient;
@@ -119,14 +123,14 @@ public class UpApiSequence implements Runnable{
 	}
 	
 	/**
-	 * 尝试停止执行,"不"关闭线程池
+	 * 尝试停止执行,不开启新任务,"不"阻断已执行的任务,"不"关闭线程池
 	 */
 	public void tryStop(){
 		isShutdown = true;
 	}
 	
 	/**
-	 * 尝试停止执行,尝试关闭线程池
+	 * 尝试停止执行,尝试关闭线程池,"不"阻断已执行的任务
 	 */
 	public void tryShutDown(){
 		tryStop();
@@ -135,6 +139,7 @@ public class UpApiSequence implements Runnable{
 	
 	/**
 	 * 停止执行,关闭线程池,关闭http链接
+	 * 
 	 */
 	public void tryHardShutDown(){
 		tryShutDown();
@@ -298,8 +303,8 @@ public class UpApiSequence implements Runnable{
 			}
 
 			@Override
-			public void setSuccessLength(long successLength) {
-				handler.setSuccessLength(successLength);
+			public void setCurrentUploadLength(long successLength) {
+				handler.setCurrentUploadLength(successLength);
 			}
 
 			@Override
@@ -308,8 +313,8 @@ public class UpApiSequence implements Runnable{
 			}
 
 			@Override
-			public void setUploadLength(long uploadLength) {
-				handler.setUploadLength(uploadLength);
+			public void setLastUploadLength(long uploadLength) {
+				handler.setLastUploadLength(uploadLength);
 			}
 
 		};

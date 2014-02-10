@@ -16,12 +16,14 @@ import java.util.concurrent.Callable;
 
 public abstract class UploadBlock  implements Callable<ChunkUploadCallRet> {
     public static int CHUNK_SIZE = 1024 * 256;
-    public static int FIRST_CHUNK = 1024 * 64;
+    public static int FIRST_CHUNK = 1024 * 256;
     public static int triedTimes = 3;
 
     protected HttpClient httpClient;
     protected String orginHost;
 
+    /// 块编号
+    protected int blockIdx;
     /// 此块开始的位置
     protected long offset;
     /// 此块的长度
@@ -29,10 +31,11 @@ public abstract class UploadBlock  implements Callable<ChunkUploadCallRet> {
     protected SliceUpload sliceUpload;
     
     public UploadBlock(SliceUpload sliceUpload, HttpClient httpClient,
-            String host, long offset, int len){
+            String host, int blockIdx, long offset, int len){
     	this.sliceUpload = sliceUpload;
 		this.httpClient = httpClient;
 		this.orginHost = host;
+		this.blockIdx = blockIdx;
         this.offset = offset;
         this.length = len;
     }
@@ -52,6 +55,7 @@ public abstract class UploadBlock  implements Callable<ChunkUploadCallRet> {
             }
         }
         clean();
+        ret.setBlockIdx(blockIdx);
         return ret;
     }
 

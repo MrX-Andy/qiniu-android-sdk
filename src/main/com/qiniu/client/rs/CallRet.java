@@ -35,7 +35,7 @@ public class CallRet {
 	
 	public void doUnmarshal() {
 		try {
-			if(this.response != null){
+			if(this.response != null && this.response.trim().startsWith("{")){
 				unmarshal();
 			}
 		} catch (Exception e) {

@@ -31,9 +31,9 @@ public class RandomAccessFileUpload extends SliceUpload {
 	}
 
 	@Override
-	protected UploadBlock buildBlockUpload(long start, int len)
+	protected UploadBlock buildBlockUpload(int blockIdx, long start, int len)
 			throws IOException {
-		return new RandomAccessFileUploadBlock(this, httpClient, host, start, len, file, fileUploadLock);
+		return new RandomAccessFileUploadBlock(this, httpClient, host, blockIdx, start, len, file, fileUploadLock);
 	}
 
 	@Override

@@ -1,8 +1,7 @@
 package com.qiniu.client.up.slice;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -25,7 +24,6 @@ import com.qiniu.client.util.Util;
 
 /**
  * 资源分块分片上传到服务器
- * @author xc
  *
  */
 public abstract class SliceUpload extends Upload{
@@ -35,7 +33,8 @@ public abstract class SliceUpload extends Upload{
     /** 错误后尝试次数 */
     public static int triedTimes = 3;
     /** 读入内存的 BLOCK 最大个数 */
-    public int streamBlockLimit = 3;
+    public int streamBlockLimit = 10;
+    /// 断点续传记录实例
     private Resumable resume;
         
     private Exception taskException;
@@ -47,17 +46,10 @@ public abstract class SliceUpload extends Upload{
 		super(threadPool, authorizer, contentLength, key, mimeType);
 		this.blockCount = (int)((contentLength + BLOCK_SIZE - 1) / BLOCK_SIZE);
 	}
-	
-	public SliceUpload(ThreadPoolExecutor threadPool, Resumable resume, Authorizer authorizer,
-			long contentLength, String key, String mimeType) {
-		super(threadPool, authorizer, contentLength, key, mimeType);
-		this.resume = resume;
-		this.blockCount = (int)((contentLength + BLOCK_SIZE - 1) / BLOCK_SIZE);
-	}
 
 	public UploadResultCallRet execute(){
 		initReusme();
-        List<Future<ChunkUploadCallRet>> fs = new ArrayList<Future<ChunkUploadCallRet>>();
+        List<Future<ChunkUploadCallRet>> fs = new LinkedList<Future<ChunkUploadCallRet>>();
         
         try {
         	// 启动监控
@@ -81,13 +73,17 @@ public abstract class SliceUpload extends Upload{
             checkThreadException();
 
             // 创建文件
-            String ctx = mkCtx(fs);
-            return mkfile(ctx, 0);
+            String ctx = mkCtx();
+            UploadResultCallRet ret = mkfile(ctx, 0);
+            cleanResume();
+            return ret;
         }catch (CallRetException e){
         	e.printStackTrace();
+        	saveResume();
             return e.getRet(UploadResultCallRet.class);
         } catch (Exception e) {
         	e.printStackTrace();
+        	saveResume();
             return new UploadResultCallRet(400, e);
         } finally {
             clearAll();
@@ -95,22 +91,7 @@ public abstract class SliceUpload extends Upload{
         }
     }
 
-    private void initReusme() {
-    	try {
-    		if(resumeClass != null && !NonResume.class.equals(resumeClass)){
-    			resume = resumeClass.getConstructor(int.class).newInstance(blockCount);
-    		}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void checkThreadException() throws Exception{
-        if(taskException != null){
-            throw Util.exceptionCause(taskException, CallRetException.class, 0);
-        }
-    }
-
+   
     /**
      * 监控直到所有块上传完成，或 有块上传失败
      * 监控在所有块上传完成或产生异常时停止
@@ -124,31 +105,31 @@ public abstract class SliceUpload extends Upload{
         Thread th = new Thread(){
             @Override
             public void run(){
-            	int doneCount = 0;
-            	// fs 会逐渐增多,直到包含所有的块上传任务,需要while
+            	// fs 会逐渐添加,直到处理所有的块上传任务,需要while
             	while(true){
-                    Util.sleep(300);
-                    // 前面的任务不一定比后面的先完成,break forCount保证先处理前面的任务
-                    // 添加break和i = doneCount,减少了重复验证,即每个任务有且只验证一次
-                   	for (int i = doneCount; i < fs.size(); i++) {
+                    Util.sleep(800);
+                    int doneCount = resume.doneCount();
+                   	for (int i = 0; i < fs.size();) {
                        Future<ChunkUploadCallRet> f = fs.get(i);
-                        if (f != null && f.isDone()) {
+                        if (f != null && f.isDone()){
                             try {
                                 ChunkUploadCallRet ret = f.get();
                                 Util.checkCallRet(ret);
                                 doneCount++;
+                                setResume(ret);
+                                fs.remove(i);
                             } catch (Exception e) {
                                 taskException = e;
                                 return;
                             }
                         }else{
-                        	Util.sleep(300);
-                        	break;
+                        	i++;
                         }
                     }
                     if(doneCount == blockCount){
                         return;
                     }
+                    saveResume();
                 }
             }
         };
@@ -157,50 +138,16 @@ public abstract class SliceUpload extends Upload{
         return th;
     }
 
-
-    private void submitCall(ThreadPoolExecutor threadPool, int idx, long start, int len,
+    private void submitCall(ThreadPoolExecutor threadPool, int blockIdx, long start, int len,
                             List<Future<ChunkUploadCallRet>> fs) throws IOException {
-    	if(resume != null && !resume.isBlockDone(idx)){
-	        UploadBlock upload = buildBlockUpload(start, len);
+    	if(!resume.isBlockDone(blockIdx)){
+	        UploadBlock upload = buildBlockUpload(blockIdx, start, len);
 	        Future<ChunkUploadCallRet> f = threadPool.submit(upload);
 	        fs.add(f);
     	}
     }
     
-    private String mkCtx(List<Future<ChunkUploadCallRet>> fs) throws Exception{
-    	if(resume == null){
-    		return mkCtx0(fs);
-    	}else{
-    		return mkCtx1(fs);
-    	}
-    }
-
-    private String mkCtx0(List<Future<ChunkUploadCallRet>> fs) throws Exception{
-        StringBuffer sb = new StringBuffer();
-        for (Future<ChunkUploadCallRet> f : fs) {
-            ChunkUploadCallRet ret = f.get();
-            Util.checkCallRet(ret);
-            sb.append(",").append(ret.getCtx());
-        }
-        String ctx = sb.substring(1);
-        return ctx;
-    }
-    
-    private String mkCtx1(List<Future<ChunkUploadCallRet>> fs) throws Exception{
-    	// 不用处理f为空：块数量不正确即以为上传有误
-    	Iterator<Future<ChunkUploadCallRet>> ifs = fs.iterator();
-    	for(int i=0; i< this.blockCount; i++){
-    		if(!resume.isBlockDone(i)){
-    			Future<ChunkUploadCallRet> f = ifs.next();
-    			ChunkUploadCallRet ret = f.get();
-    			Util.checkCallRet(ret);
-                Block block = new Block(i, ret.getCtx());
-                resume.set(block);
-    		}
-    	}
-    	if(ifs.hasNext()){
-    		throw new CallRetException(new UploadResultCallRet(400, "wrong block count."));
-    	}
+    private String mkCtx() throws Exception{
         StringBuilder sb = new StringBuilder();
 		for(int i=0; i< this.blockCount; i++){
 			Block b = resume.getBlock(i);
@@ -239,6 +186,66 @@ public abstract class SliceUpload extends Upload{
     	return Math.min(streamBlockLimit, threadPool.getMaximumPoolSize())
     			- threadPool.getActiveCount();
     }
+    
+	/**
+	 * 当指定到断点记录类型为null,或指定的断点记录创建失败时,
+	 * 使用默认的断点记录类型: 不保存断点记录
+	 */
+	protected void initReusme() {
+    	try {
+    		if(resumeClass != null){
+    			resume = resumeClass.getConstructor(int.class, String.class)
+    					.newInstance(blockCount, key);
+    		}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	// 默认为不保存断点记录
+    	if(resume == null){
+    		resume = new NonResume(blockCount, key);
+    	}
+		try{
+			resume.load();
+			lastUploadLength = resume.doneCount() * BLOCK_SIZE;
+		}catch(Exception e1){
+			e1.printStackTrace();
+		}
+	}
+    
+    private void cleanResume(){
+    	try {
+	    	if(resume != null){
+	    		resume.clean();
+	    	}
+    	} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    
+    private void setResume(ChunkUploadCallRet ret){
+    	if(resume != null && !resume.isBlockDone(ret.getBlockIdx())){
+    		Block block = new Block(ret.getBlockIdx(), ret.getCtx(), true);
+    	    resume.set(block);
+    	}
+    }
+    
+    private void saveResume(){
+    	try {
+	    	if(resume != null){
+	    		resume.save();
+	    	}
+    	} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+
+	private void checkThreadException() throws Exception{
+        if(taskException != null){
+            throw Util.exceptionCause(taskException, CallRetException.class, 0);
+        }
+    }
+
 
     private void clearAll(){
         try{
@@ -255,7 +262,7 @@ public abstract class SliceUpload extends Upload{
         super.addSuccessLength(size);
     }
 
-    protected abstract UploadBlock buildBlockUpload(long start, int len) throws IOException;
+    protected abstract UploadBlock buildBlockUpload(int blockIdx, long start, int len) throws IOException;
 
     protected  abstract void clean();
     
