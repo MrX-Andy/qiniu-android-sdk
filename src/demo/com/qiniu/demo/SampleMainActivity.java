@@ -69,6 +69,8 @@ public class SampleMainActivity extends Activity {
 		}
 	}
 
+	
+	// *********      以下为七牛sdk相关代码      *********
 	long start = 0;
 	
 	private UploadHandler uploadHandler = new UploadHandler(){
@@ -108,8 +110,7 @@ public class SampleMainActivity extends Activity {
 		String key = UUID.randomUUID().toString();
 		p.name = key + "__" + p.name;
 		
-		Upload upload = new StreamNormalUpload(p.is, authorizer, p.size,
-				p.name, p.mimeType);
+		Upload upload = Upload.buildUpload(authorizer, p);
 		upload.passParam = p;
 		progress.setText(p.name);
 		start = System.currentTimeMillis();
