@@ -13,10 +13,6 @@ import com.qiniu.client.auth.BasicAuthorizer;
 import com.qiniu.client.rs.UploadResultCallRet;
 import com.qiniu.client.up.InputParam.FileInputParam;
 import com.qiniu.client.up.InputParam.StreamInputParam;
-import com.qiniu.client.up.normal.FileNormalUpload;
-import com.qiniu.client.up.normal.StreamNormalUpload;
-import com.qiniu.client.up.slice.RandomAccessFileUpload;
-import com.qiniu.client.up.slice.StreamSliceUpload;
 import com.qiniu.client.up.slice.resume.Resumable;
 import com.qiniu.client.util.HttpHelper;
 import com.qiniu.client.util.PausableThreadPoolExecutor;
@@ -152,6 +148,7 @@ public class UpApiSequence implements Runnable{
 	 */
 	private void shutdownHttpClient(){
 		httpClient.getConnectionManager().shutdown();
+		httpClient = null;
 	}
 	
 	public void tryPause(){
