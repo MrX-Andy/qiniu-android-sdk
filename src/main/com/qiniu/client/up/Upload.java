@@ -9,6 +9,12 @@ import org.apache.http.client.HttpClient;
 import com.qiniu.client.auth.Authorizer;
 import com.qiniu.client.config.Config;
 import com.qiniu.client.rs.UploadResultCallRet;
+import com.qiniu.client.up.InputParam.FileInputParam;
+import com.qiniu.client.up.InputParam.StreamInputParam;
+import com.qiniu.client.up.normal.FileNormalUpload;
+import com.qiniu.client.up.normal.StreamNormalUpload;
+import com.qiniu.client.up.slice.RandomAccessFileUpload;
+import com.qiniu.client.up.slice.StreamSliceUpload;
 import com.qiniu.client.up.slice.resume.Resumable;
 
 /**
@@ -17,6 +23,35 @@ import com.qiniu.client.up.slice.resume.Resumable;
  *
  */
 public abstract class Upload {
+	/** 资源大于此值的将采用分片上传,小于等于的直传. */
+    public static int sliceShed = 1024 * 1024 * 4;
+    
+    public static Upload buildUpload(Authorizer authorizer, FileInputParam p) {
+		Upload up = null;
+		if(p.size > sliceShed){
+			up = new RandomAccessFileUpload(p.file, authorizer, p.size,
+						p.name, p.mimeType);
+		}else{
+			up = new FileNormalUpload(p.file, authorizer, p.size,
+					p.name, p.mimeType);
+		}
+		
+		up.passParam = p;
+		return up;
+	}
+	
+    public static Upload buildUpload(Authorizer authorizer, StreamInputParam p) {
+		Upload up = null;
+		if(p.size > sliceShed){
+			up = new StreamSliceUpload(p.is, authorizer, p.size,
+					p.name, p.mimeType);
+		}else{
+			up = new StreamNormalUpload(p.is, authorizer, p.size,
+					p.name, p.mimeType);
+		}
+		up.passParam = p;
+		return up;
+	}
 	public abstract UploadResultCallRet execute();
 	
 	public String host = Config.UP_HOST;

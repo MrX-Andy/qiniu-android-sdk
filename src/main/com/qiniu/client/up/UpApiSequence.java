@@ -32,8 +32,7 @@ public class UpApiSequence implements Runnable{
     public static int activeFileLimit = 3;
     /** 最大线程数 */
 	public static int threadsLimit = 6;
-	/** 资源大于此值的将采用分片上传,小于等于的直传. */
-    public static int sliceShed = 1024 * 1024 * 4;
+	
 	private PausableThreadPoolExecutor threadPool;
 	private HttpClient httpClient;
 	private Authorizer authorizer;
@@ -202,7 +201,7 @@ public class UpApiSequence implements Runnable{
 	public void add(UploadHandler handler, String ...files){
 		for(String file : files){
 			try {
-				this.add(handler, buildUpload(InputParam.fileInputParam(file)));
+				this.add(handler, Upload.buildUpload(authorizer, InputParam.fileInputParam(file)));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -212,7 +211,7 @@ public class UpApiSequence implements Runnable{
 	public void add(UploadHandler handler, File ...files){
 		for(File file : files){
 			try {
-				this.add(handler, buildUpload(InputParam.fileInputParam(file)));
+				this.add(handler, Upload.buildUpload(authorizer, InputParam.fileInputParam(file)));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -221,42 +220,16 @@ public class UpApiSequence implements Runnable{
 	
 	public void add(UploadHandler handler, FileInputParam ...inputParams){
 		for(FileInputParam p : inputParams){
-			this.add(handler, buildUpload(p));
+			this.add(handler, Upload.buildUpload(authorizer, p));
 		}
 	}
 	
 	public void add(UploadHandler handler, StreamInputParam ...inputParams){
 		for(StreamInputParam p : inputParams){
-			this.add(handler, buildUpload(p));
+			this.add(handler, Upload.buildUpload(authorizer, p));
 		}
 	}
 	
-	private Upload buildUpload(FileInputParam p) {
-		Upload up = null;
-		if(p.size > sliceShed){
-			up = new RandomAccessFileUpload(p.file, authorizer, p.size,
-						p.name, p.mimeType);
-		}else{
-			up = new FileNormalUpload(p.file, authorizer, p.size,
-					p.name, p.mimeType);
-		}
-		
-		up.passParam = p;
-		return up;
-	}
-	
-	private Upload buildUpload(StreamInputParam p) {
-		Upload up = null;
-		if(p.size > sliceShed){
-			up = new StreamSliceUpload(p.is, authorizer, p.size,
-					p.name, p.mimeType);
-		}else{
-			up = new StreamNormalUpload(p.is, authorizer, p.size,
-					p.name, p.mimeType);
-		}
-		up.passParam = p;
-		return up;
-	}
 	
 	private void initThreadPool() {
 		if (threadPool == null || threadPool.isShutdown()

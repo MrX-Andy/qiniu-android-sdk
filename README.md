@@ -6,8 +6,7 @@ org.apache.http.entity.mime.
 一、资源上传（包含文件、输入流）：     
 1.直传   
 StreamInputParam fp = InputParam.streamInputParam(file);   
-Upload upload2 =    
-new StreamNormalUpload(fp.is, authorizer, fp.size, fp.name, fp.mimeType);   
+Upload upload2 =  Upload.buildUpload(authorizer, fp);   
 upload2.passParam = fp; // 此参数会传递到回调中   
 Thread t2 = UpApi.execute(upload2, uploadHandler);    
    
@@ -15,9 +14,10 @@ Thread t2 = UpApi.execute(upload2, uploadHandler);
 FileInputParam fp = InputParam.fileInputParam(file);   
 Upload upload2 =    
 new RandomAccessFileUpload(fp.file, authorizer, fp.size, fp.name, fp.mimeType);   
+upload2.passParam = fp; // 此参数会传递到回调中   
 Thread t2 = UpApi.execute(upload2, uploadHandler);    
    
-3.多文件队列上传,当大于某值时使用分片上传   
+3.多文件队列上传   
 UpApiSequence seq = new UpApiSequence();   
 seq.add(uploadHandler, files);   
 Thread t = seq.execute();   
@@ -27,8 +27,8 @@ seq.tryShutDown();
 4.回调处理   
 private Object passParam;   
 private long currentUploadLength;   
-private long contentLength;   
 private long lastUploadLength;   
+private long contentLength;   
 protected void onProcess();   
 protected void onSuccess(UploadResultCallRet ret);   
 protected void onFailure(Exception e);   
@@ -37,12 +37,14 @@ protected void onFailure(Exception e);
 upload.setResumable(FileResume.class);   
 upApi.setResumable(FileResume.class);   
 seq.setResumable(FileResume.class);   
-(存入数据库暂未实现 DataStoreResume.class)
+(FileResume.class 未在Android下测试，在linux下正常。存入数据库暂未实现 DataStoreResume.class)
 
 6.获取上传凭证,获取/生成凭证分离   
 public interface Authorizer {   
 	void buildNewUploadToken();   
 	String getUploadToken();   
 }  
-   
+
+7.与java代码基本一致   
+  
 
